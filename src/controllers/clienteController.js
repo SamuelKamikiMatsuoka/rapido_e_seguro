@@ -1,7 +1,7 @@
-
 const { clienteModel } = require('../models/clienteModel');
 
 const clienteController = {
+
     listarClientes: async (req, res) => {
         try {
             const { idCliente } = req.params;
@@ -54,7 +54,7 @@ const clienteController = {
         try {
             const { idCliente } = req.params;
 
-            const resultado = await clienteModel.excluirCliente(idCliente);
+            const resultado = await clienteModel.deletarCliente(idCliente);
 
             if (resultado.affectedRows === 0) {
                 return res.status(200).json({ message: "cliente não encontrado" });
@@ -68,5 +68,3 @@ const clienteController = {
 };
 
 module.exports = { clienteController };
-
-
