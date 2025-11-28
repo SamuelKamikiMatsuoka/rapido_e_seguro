@@ -16,9 +16,9 @@ const clienteController = {
                 resultado = await clienteModel.listarTodosClientes();
             }
 
-            return res.status(200).json(resultado);
+            res.status(200).json(resultado);
         } catch (error) {
-            return res.status(500).json({ error: "erro ao buscar cliente" });
+          res.status(500).json({ error: "erro ao buscar cliente" });
         }
     },
 
