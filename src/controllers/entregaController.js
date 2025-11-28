@@ -29,7 +29,7 @@ const entregaController = {
             return res.status(200).json(entregas);
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ message: 'Erro ao listar entregas', errorMessage: error.message });
+            res.status(500).json({ message: 'Erro ao listar entregas', errorMessage: error.message });
         }
     },
 
@@ -51,7 +51,7 @@ const entregaController = {
 
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ message: 'Erro ao buscar entrega', errorMessage: error.message });
+            res.status(500).json({ message: 'Erro ao buscar entrega', errorMessage: error.message });
         }
     },
 
@@ -79,7 +79,7 @@ const entregaController = {
 
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ message: 'Erro ao atualizar entrega', errorMessage: error.message });
+            res.status(500).json({ message: 'Erro ao atualizar entrega', errorMessage: error.message });
         }
     },
 

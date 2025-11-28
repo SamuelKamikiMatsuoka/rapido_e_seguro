@@ -18,7 +18,7 @@ const clienteController = {
 
             res.status(200).json(resultado);
         } catch (error) {
-          res.status(500).json({ error: "erro ao buscar cliente" });
+            res.status(500).json({ error: "erro ao buscar cliente" });
         }
     },
 
@@ -44,9 +44,9 @@ const clienteController = {
                 return res.status(200).json({ message: "cliente não encontrado" });
             }
 
-            return res.status(200).json({ message: "cliente atualizado" });
+            res.status(200).json({ message: "cliente atualizado" });
         } catch (error) {
-            return res.status(500).json({ error: "erro ao atualizar cliente" });
+            res.status(500).json({ error: "erro ao atualizar cliente" });
         }
     },
 
@@ -60,9 +60,9 @@ const clienteController = {
                 return res.status(200).json({ message: "cliente não encontrado" });
             }
 
-            return res.status(200).json({ message: "cliente deletado" });
+            res.status(200).json({ message: "cliente deletado" });
         } catch (error) {
-            return res.status(500).json({ error: "erro ao deletar cliente" });
+            res.status(500).json({ error: "erro ao deletar cliente" });
         }
     }
 };
