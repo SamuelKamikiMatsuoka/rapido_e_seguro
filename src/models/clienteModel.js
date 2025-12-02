@@ -1,100 +1,79 @@
-/**
- * Model responsável pelas operações da tabela 'clientes'.
- * Regras:
- * - CPF não pode duplicar
- * - Email não pode duplicar
- * - Telefone não pode duplicar, mas o cliente pode ter vários telefones
- */
-
 const { pool } = require('../config/db');
 
 const clienteModel = {
 
-    /**
-     * Retorna um cliente pelo ID
-     * @param {number} idCliente
-     * @returns {Promise<object[]>}
-     */
-    selectClienteById: async (idCliente) => {
+    selectClienteById: async (pIdCliente) => {
         const sql = 'SELECT * FROM clientes WHERE id_cliente = ?;';
-        const [rows] = await pool.query(sql, [idCliente]);
+        const [rows] = await pool.query(sql, [pIdCliente]);
         return rows;
     },
 
-    /**
-     * Insere um cliente
-     * CPF e Email são únicos
-     * @param {string} nome
-     * @param {string} cpf
-     * @param {string} email
-     * @returns {Promise<object>}
-     */
     insertCliente: async (nome, cpf, email) => {
-        const sql = `
-            INSERT INTO clientes (nome, cpf, email)
-            VALUES (?, ?, ?);
-        `;
-
+        const connection = await pool.getConnection();
         try {
-            const [result] = await pool.query(sql, [nome, cpf, email]);
+            await connection.beginTransaction();
+
+            const sql = `
+                INSERT INTO clientes (nome, cpf, email)
+                VALUES (?, ?, ?);
+            `;
+            const values = [nome, cpf, email];
+
+            const [result] = await connection.query(sql, values);
+
+            await connection.commit();
             return result;
+
         } catch (error) {
-            // Tratamento de erros de duplicação
-            if (error.code === "ER_DUP_ENTRY") {
-                if (error.sqlMessage.includes("cpf")) {
-                    throw new Error("CPF já cadastrado.");
-                }
-                if (error.sqlMessage.includes("email")) {
-                    throw new Error("Email já cadastrado.");
-                }
-            }
+            await connection.rollback();
             throw error;
         }
     },
 
-    /**
-     * Atualiza nome e email do cliente
-     * @param {number} idCliente
-     * @param {string} nome
-     * @param {string} email
-     * @returns {Promise<object>}
-     */
-    updateCliente: async (idCliente, nome, email) => {
-        const sql = `
-            UPDATE clientes
-            SET nome = ?, email = ?
-            WHERE id_cliente = ?;
-        `;
-
+    updateCliente: async (pIdCliente, nome, email) => {
+        const connection = await pool.getConnection();
         try {
-            const [result] = await pool.query(sql, [nome, email, idCliente]);
+            await connection.beginTransaction();
+
+            const sql = `
+                UPDATE clientes
+                SET nome = ?, email = ?
+                WHERE id_cliente = ?;
+            `;
+            const values = [nome, email, pIdCliente];
+
+            const [result] = await connection.query(sql, values);
+
+            await connection.commit();
             return result;
+
         } catch (error) {
-            if (error.code === "ER_DUP_ENTRY" && error.sqlMessage.includes("email")) {
-                throw new Error("Email já está cadastrado.");
-            }
+            await connection.rollback();
             throw error;
         }
     },
 
-    /**
-     * Deleta um cliente
-     * @param {number} idCliente
-     * @returns {Promise<object>}
-     */
-    deleteCliente: async (idCliente) => {
-        const sql = `
-            DELETE FROM clientes
-            WHERE id_cliente = ?;
-        `;
-        const [result] = await pool.query(sql, [idCliente]);
-        return result;
+    deleteCliente: async (pIdCliente) => {
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            const sql = `
+                DELETE FROM clientes
+                WHERE id_cliente = ?;
+            `;
+
+            const [result] = await connection.query(sql, [pIdCliente]);
+
+            await connection.commit();
+            return result;
+
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        }
     },
 
-    /**
-     * Lista todos os clientes cadastrados
-     * @returns {Promise<object[]>}
-     */
     listarClientes: async () => {
         const sql = 'SELECT * FROM clientes;';
         const [rows] = await pool.query(sql);
