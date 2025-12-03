@@ -11,8 +11,8 @@ const pedidoModel = {
     insertPedido: async (pIdCliente) => {
         const sql = `
             INSERT INTO pedidos
-            (id_cliente, data_pedido, tipo, distancia, peso, valor_km, valor_kg)
-            VALUES (?, ?, ?, ?, ?, ?, ?);
+            (clientes_id_cliente, data_pedido, tipoEntrega_id_tipo, distancia_km, peso_kg)
+            VALUES (?, ?, ?, ?, ?);
         `;
 
         const values = [pIdCliente];

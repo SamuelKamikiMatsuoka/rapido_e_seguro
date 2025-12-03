@@ -14,14 +14,14 @@ const pedidoController = {
 
     criarPedido: async (req, res) => {
         try {
-            const camposObrigatorios = ['id_cliente', 'valor_total', 'data_pedido', 'id_produto', 'quantidade', 'valor_item'];
+            const camposObrigatorios = ['clientes_id_cliente', 'data_pedido', 'tipoEntrega_id_tipo', 'distancia_km', 'peso_kg'];
             if (!validarCamposObrigatorios(req.body, camposObrigatorios)) {
                 return res.status(400).json({ message: 'Verifique os dados enviados e tente novamente' });
             }
 
-            const { id_cliente, valor_total, data_pedido, id_produto, quantidade, valor_item } = req.body;
+            const { clientes_id_cliente, data_pedido, tipoEntrega_id_tipo, distancia_km, peso_kg } = req.body;
 
-            const resultado = await pedidoModel.insertPedido(id_cliente, valor_total, data_pedido, id_produto, quantidade, valor_item);
+            const resultado = await pedidoModel.insertPedido(clientes_id_cliente, data_pedido, tipoEntrega_id_tipo, distancia_km, peso_kg);
 
             res.status(201).json({ message: 'Registro incluído com sucesso!', data: resultado });
 
