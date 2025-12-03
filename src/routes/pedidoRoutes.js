@@ -4,8 +4,7 @@ const { pedidoController } = require('../controllers/pedidoController');
 
 
 pedidoRoutes.post('/pedidos', pedidoController.criarPedido);
-pedidoRoutes.post('/pedidos/itens', pedidoController.criarItem);
-pedidoRoutes.put('/pedidos/itens/:idItem', pedidoController.alterarItem);
-pedidoRoutes.delete('/pedidos/:idPedido/itens/:idItem', pedidoController.excluirItem);
+pedidoRoutes.put('/pedidos', pedidoController.alterarPedido);
+pedidoRoutes.delete('/pedidos', pedidoController.excluirPedido);
 
 module.exports = { pedidoRoutes };

@@ -8,26 +8,28 @@ const pedidoModel = {
         return rows;
     },
 
-    insertPedido: async (pIdCliente) => {
-        const sql = `
-            INSERT INTO pedidos
-            (clientes_id_cliente, data_pedido, tipoEntrega_id_tipo, distancia_km, peso_kg)
-            VALUES (?, ?, ?, ?, ?);
-        `;
+ insertPedido: async (pData_pedido, pDistancia_km, pPeso_kg, pClientes_id_cliente, pTipoEntrega_id_tipo) => {
+    const sql = `
+        INSERT INTO pedidos
+        (data_pedido, distancia_km, peso_kg, clientes_id_cliente, tipoEntrega_id_tipo)
+        VALUES (?, ?, ?, ?, ?);
+    `;
 
-        const values = [pIdCliente];
+    const values = [pData_pedido, pDistancia_km, pPeso_kg, pClientes_id_cliente, pTipoEntrega_id_tipo];
 
-        const [rows] = await pool.query(sql, values);
-        return rows;
-    },
+    const [rows] = await pool.query(sql, values);
+    return rows;
+},
 
-    updatePedido: async (pIdPedido, tipo, distancia, peso) => {
+
+
+    updatePedido: async (pIdPedido, pTipoEntrega_id_tipo, pDistancia_km, pPeso_kg) => {
         const sql = `
             UPDATE pedidos
-            SET tipo = ?, distancia = ?, peso = ?
+            SET tipoEntrega_id_tipo = ?, distancia_km = ?, peso_kg = ?
             WHERE id_pedido = ?;
         `;
-        const values = [tipo, distancia, peso, pIdPedido];
+        const values = [pTipoEntrega_id_tipo, pDistancia_km, pPeso_kg, pIdPedido];
         const [rows] = await pool.query(sql, values);
         return rows;
     },
