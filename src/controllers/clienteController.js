@@ -1,35 +1,89 @@
 const { clienteModel } = require('../models/clienteModel');
 
+async function buscarCep (cep) {
+    const limpa = cep.replace(/\D/g, '');
+    if (cep.length != 8) {
+        throw new Error('CEP inválido!');
+    }
+    const response = await fetch(`https://viacep.com.br/ws/${limpa}/json/`);
+
+    console.log(response);
+    
+    const data = await response.json();
+
+    if (data.erro) {
+        throw new Error('CEP não encontrado');
+    }
+    return data;
+    
+};
+
+
+
 const clienteController = {
 
     listarClientes: async (req, res) => {
         try {
-            const { idCliente } = req.params;
-
-            let resultado;
-            if (idCliente) {
-                resultado = await clienteModel.buscarClientePorId(idCliente);
-                if (resultado.length === 0) {
-                    return res.status(200).json({ message: "cliente não encontrado" });
-                }
-            } else {
-                resultado = await clienteModel.listarTodosClientes();
+            const idCliente = req.query.idCliente;
+            const consulta = idCliente ? clienteModel.selectClienteById(idCliente) : clienteModel.listarCliente();
+            const resultado = await consulta;
+            if (resultado.length === 0) {
+                return res.status(200).json({ message: 'A consulta não retornou resultados' });
             }
+            res.status(200).json({ data: resultado });
 
-            return res.status(200).json(resultado);
         } catch (error) {
-            return res.status(500).json({ error: "erro ao buscar cliente" });
+            console.error(error);
+            res.status(500).json({message: `Ocorreu um erro no servidor`, 
+                errorMessage: error.message});
         }
     },
 
-    cadastrarCliente: async (req, res) => {
+    
+    insertClienteCompleto: async (req, res) => {
         try {
-            const dados = req.body;
-            const resultado = await clienteModel.cadastrarCliente(dados);
+            const { nome, cpf, email, cep, numero, complemento, telefones } = req.body;
+            
+            if (!nome || !cpf || !email || !cep || !numero || !complemento || !telefones) {
+                return res.status(400).json({ message: 'Verifique os dados enviados e tente novamente' });
+            }
 
-            return res.status(201).json({ message: "cliente cadastrado", id: resultado.insertId });
+            if (!Array.isArray(telefones) || telefones.length === 0) {
+                return res.status(400).json({ message: 'Informe pelo menos um telefone válido' });
+            }
+
+            if (cpf.length !== 11) {
+                return res.status(400).json({ message: 'CPF inválido! O CPF deve ter 11 dígitos.'});
+            }
+           
+            const cpfExistente = await clienteModel.selectByCpf(cpf)
+
+            if (cpfExistente && cpfExistente.length > 0) {
+                return res.status(409).json({ message: `O CPF informado já existe no sistema. Não foi possivel realizar a inserção`});
+            }
+
+            const dadosCep = await buscarCep(cep);
+   
+            const endereco = {
+                rua: dadosCep.logradouro,
+                bairro: dadosCep.bairro,
+                cidade: dadosCep.localidade,
+                uf: dadosCep.uf,
+                cep,
+                numero,
+                complemento
+            };
+    
+            const result = await clienteModel.insertClienteCompleto(
+                nome, cpf, email, endereco, telefones
+            );
+    
+            res.status(201).json({message: 'Registro incluindo com sucesso', data: result});
+    
         } catch (error) {
-            return res.status(500).json({ error: "erro ao cadastrar cliente" });
+            console.error(error);
+            res.status(500).json({message: `Ocorreu um erro no servidor`, 
+                errorMessage: error.message});
         }
     },
 
@@ -44,9 +98,12 @@ const clienteController = {
                 return res.status(200).json({ message: "cliente não encontrado" });
             }
 
-            return res.status(200).json({ message: "cliente atualizado" });
+            res.status(200).json({ message: "cliente atualizado" });
+
         } catch (error) {
-            return res.status(500).json({ error: "erro ao atualizar cliente" });
+            console.error(error);
+            res.status(500).json({message: `Ocorreu um erro no servidor`, 
+                errorMessage: error.message});
         }
     },
 
@@ -54,15 +111,18 @@ const clienteController = {
         try {
             const { idCliente } = req.params;
 
-            const resultado = await clienteModel.deletarCliente(idCliente);
+            const resultado = await clienteModel.deleteCliente(idCliente);
 
             if (resultado.affectedRows === 0) {
                 return res.status(200).json({ message: "cliente não encontrado" });
             }
 
-            return res.status(200).json({ message: "cliente deletado" });
+             res.status(200).json({ message: "cliente deletado" });
+
         } catch (error) {
-            return res.status(500).json({ error: "erro ao deletar cliente" });
+            console.error(error);
+            res.status(500).json({message: `Ocorreu um erro no servidor`, 
+                errorMessage: error.message});
         }
     }
 };
