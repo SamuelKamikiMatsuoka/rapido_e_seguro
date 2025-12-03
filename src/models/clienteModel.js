@@ -10,6 +10,8 @@ const clienteModel = {
 	            cpf, 
 	            email, 
 	            ender.cep, 
+                ender.numero,
+                ender.complemento,
 	            tel.telefone
             FROM clientes cli
             join enderecos ender on cli.id_cliente = ender.clientes_id_cliente
@@ -26,6 +28,8 @@ const clienteModel = {
 	            cpf, 
 	            email, 
 	            ender.cep, 
+                ender.numero,
+                ender.complemento,
 	            tel.telefone
             FROM clientes cli
             join enderecos ender on cli.id_cliente = ender.clientes_id_cliente
@@ -53,11 +57,7 @@ const clienteModel = {
                 INSERT INTO clientes (nome, cpf, email)
                 VALUES (?, ?, ?);
             `;
-            const [rows] = await connection.query(sqlCliente, [
-                pNome,
-                pCpf,
-                pEmail
-            ]);
+            const [rows] = await connection.query(sqlCliente, [pNome, pCpf, pEmail]);
 
             const novoIdCliente = rows.insertId;
 
@@ -96,12 +96,73 @@ const clienteModel = {
         }
     },
 
-    updateCliente: async (pIdCliente, nome, email) => {
-        const sql = `UPDATE clientes SET nome = ?, email = ?WHERE id_cliente = ?;`;
-        const values = [nome, email, pIdCliente];
-        const [rows] = await pool.query(sql, values);
-        return rows;
+    updateClienteCompleto: async (id, dados) => {
+        const connection = await pool.getConnection();
+    
+        try {
+            await connection.beginTransaction();
+    
+            // 1. Atualiza cliente
+            if (dados.nome || dados.cpf || dados.email) {
+                const campos = [];
+                const valores = [];
+    
+                if (dados.nome) { campos.push("nome = ?"); valores.push(dados.nome); }
+                if (dados.cpf) { campos.push("cpf = ?"); valores.push(dados.cpf); }
+                if (dados.email) { campos.push("email = ?"); valores.push(dados.email); }
+    
+                valores.push(id);
+    
+                await connection.query(
+                    `UPDATE clientes SET ${campos.join(", ")} WHERE id_cliente = ?`,
+                    valores
+                );
+            }
+    
+            // 2. Atualiza endereço (se tiver qualquer campo de endereço)
+            if (dados.cep || dados.numero || dados.complemento) {
+    
+                const campos = [];
+                const valores = [];
+    
+                if (dados.cep) { campos.push("cep = ?"); valores.push(dados.cep); }
+                if (dados.numero) { campos.push("numero = ?"); valores.push(dados.numero); }
+                if (dados.complemento) { campos.push("complemento = ?"); valores.push(dados.complemento); }
+    
+                valores.push(id);
+    
+                await connection.query(
+                    `UPDATE enderecos 
+                     SET ${campos.join(", ")}
+                     WHERE clientes_id_cliente = ?`,
+                    valores
+                );
+            }
+    
+            // 3. Telefones — se a requisição enviar telefones, então atualiza
+            if (dados.telefones && Array.isArray(dados.telefones)) {
+                await connection.query(`DELETE FROM telefones WHERE clientes_id_cliente = ?`, [id]);
+    
+                for (let tel of dados.telefones) {
+                    await connection.query(
+                        `INSERT INTO telefones (telefone, clientes_id_cliente)
+                         VALUES (?, ?)`,
+                        [tel, id]
+                    );
+                }
+            }
+    
+            await connection.commit();
+            return { message: "Cliente atualizado com sucesso" };
+    
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     },
+    
 
     deleteCliente: async (pIdCliente) => {
         const sqlTelefones = `DELETE FROM telefones WHERE clientes_id_cliente = ?;`;

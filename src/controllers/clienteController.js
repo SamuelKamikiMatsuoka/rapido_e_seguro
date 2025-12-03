@@ -40,73 +40,75 @@ const clienteController = {
     },
 
     
-    insertClienteCompleto: async (req, res) => {
-        try {
-            const { nome, cpf, email, cep, numero, complemento, telefones } = req.body;
+        insertClienteCompleto: async (req, res) => {
+            try {
+                const { nome, cpf, email, cep, numero, complemento, telefones } = req.body;
+                
+                if (!nome || !cpf || !email || !cep || !numero || !complemento || !telefones) {
+                    return res.status(400).json({ message: 'Verifique os dados enviados e tente novamente' });
+                }
+
+                if (!Array.isArray(telefones) || telefones.length === 0) {
+                    return res.status(400).json({ message: 'Informe pelo menos um telefone válido' });
+                }
+
+                if (cpf.length !== 11) {
+                    return res.status(400).json({ message: 'CPF inválido! O CPF deve ter 11 dígitos.'});
+                }
             
-            if (!nome || !cpf || !email || !cep || !numero || !complemento || !telefones) {
-                return res.status(400).json({ message: 'Verifique os dados enviados e tente novamente' });
-            }
+                const cpfExistente = await clienteModel.selectByCpf(cpf)
 
-            if (!Array.isArray(telefones) || telefones.length === 0) {
-                return res.status(400).json({ message: 'Informe pelo menos um telefone válido' });
-            }
+                if (cpfExistente && cpfExistente.length > 0) {
+                    return res.status(409).json({ message: `O CPF informado já existe no sistema. Não foi possivel realizar a inserção`});
+                }
 
-            if (cpf.length !== 11) {
-                return res.status(400).json({ message: 'CPF inválido! O CPF deve ter 11 dígitos.'});
-            }
-           
-            const cpfExistente = await clienteModel.selectByCpf(cpf)
-
-            if (cpfExistente && cpfExistente.length > 0) {
-                return res.status(409).json({ message: `O CPF informado já existe no sistema. Não foi possivel realizar a inserção`});
-            }
-
-            const dadosCep = await buscarCep(cep);
-   
-            const endereco = {
-                rua: dadosCep.logradouro,
-                bairro: dadosCep.bairro,
-                cidade: dadosCep.localidade,
-                uf: dadosCep.uf,
-                cep,
-                numero,
-                complemento
-            };
+                const dadosCep = await buscarCep(cep);
     
-            const result = await clienteModel.insertClienteCompleto(
-                nome, cpf, email, endereco, telefones
-            );
-    
-            res.status(201).json({message: 'Registro incluindo com sucesso', data: result});
-    
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({message: `Ocorreu um erro no servidor`, 
-                errorMessage: error.message});
-        }
-    },
-
-    atualizarCliente: async (req, res) => {
-        try {
-            const { idCliente } = req.params;
-            const dados = req.body;
-
-            const resultado = await clienteModel.atualizarCliente(idCliente, dados);
-
-            if (resultado.affectedRows === 0) {
-                return res.status(200).json({ message: "cliente não encontrado" });
+                const endereco = {
+                    rua: dadosCep.logradouro,
+                    bairro: dadosCep.bairro,
+                    cidade: dadosCep.localidade,
+                    uf: dadosCep.uf,
+                    cep,
+                    numero,
+                    complemento
+                };
+        
+                const result = await clienteModel.insertClienteCompleto(
+                    nome, cpf, email, endereco, telefones
+                );
+        
+                res.status(201).json({message: 'Registro incluindo com sucesso', data: result});
+        
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({message: `Ocorreu um erro no servidor`, 
+                    errorMessage: error.message});
             }
+        },
 
-            res.status(200).json({ message: "cliente atualizado" });
-
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({message: `Ocorreu um erro no servidor`, 
-                errorMessage: error.message});
-        }
-    },
-
+        atualizarCliente: async (req, res) => {
+            try {
+                const { idCliente } = req.params;
+                const dados = req.body; 
+        
+                const result = await clienteModel.updateClienteCompleto(idCliente, dados);
+        
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({ message: "Cliente não encontrado" });
+                }
+        
+                res.status(200).json({ message: "Cliente atualizado com sucesso" });
+        
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({
+                    message: "Erro no servidor",
+                    errorMessage: error.message
+                });
+            }
+        },
+        
     excluirCliente: async (req, res) => {
         try {
             const { idCliente } = req.params;
