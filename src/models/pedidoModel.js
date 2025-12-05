@@ -2,32 +2,55 @@ const { pool } = require('../config/db');
 
 const pedidoModel = {
 
-    selectPedidoById: async (pIdPedido) => {
-        const sql = 'SELECT * FROM pedidos WHERE id_pedido = ?;';
-        const [rows] = await pool.query(sql, [pIdPedido]);
+    listarPedido: async () => {
+        const sql =
+            ` SELECT 
+	            id_pedido,
+                data_pedido,
+                distancia_km,
+                peso_kg,
+                cli.nome as nome_cliente,
+                tp.nome_tipo as tipo_entrega
+            from pedidos pe
+            join clientes cli on pe.clientes_id_cliente = cli.id_cliente
+            join tipoentrega tp on pe.tipoEntrega_id_tipo = tp.id_tipo;`;
+        const [rows] = await pool.query(sql);
         return rows;
     },
 
-    insertPedido: async (pIdCliente) => {
+    selectPedidoById: async (pIdpedido) => {
         const sql = `
-            INSERT INTO pedidos
-            (id_cliente, data_pedido, tipo, distancia, peso, valor_km, valor_kg)
-            VALUES (?, ?, ?, ?, ?, ?, ?);
-        `;
-
-        const values = [pIdCliente];
-
+            SELECT 
+	            id_pedido,
+                data_pedido,
+                distancia_km,
+                peso_kg,
+                cli.nome as nome_cliente,
+                tp.nome_tipo as tipo_entrega
+            from pedidos pe
+            join clientes cli on pe.clientes_id_cliente = cli.id_cliente
+            join tipoentrega tp on pe.tipoEntrega_id_tipo = tp.id_tipo
+            WHERE id_pedido = ?;`;
+        const values = [pIdpedido]
         const [rows] = await pool.query(sql, values);
         return rows;
     },
 
-    updatePedido: async (pIdPedido, tipo, distancia, peso) => {
+    insertPedido: async (pData, pDistancia, pPeso, pIdCliente, pTipoEntrega, pIdParametro) => {
         const sql = `
-            UPDATE pedidos
-            SET tipo = ?, distancia = ?, peso = ?
-            WHERE id_pedido = ?;
-        `;
-        const values = [tipo, distancia, peso, pIdPedido];
+        INSERT INTO pedidos
+        (data_pedido, distancia_km, peso_kg, clientes_id_cliente, tipoEntrega_id_tipo, id_parametro)
+        VALUES (?, ?, ?, ?, ?, ?);`;
+        const values = [pData, pDistancia, pPeso, pIdCliente, pTipoEntrega, pIdParametro];
+        const [rows] = await pool.query(sql, values);
+        return rows;
+    },
+
+
+    updatePedido: async (pIdPedido, pTipoEntrega, pDistancia, pPeso) => {
+        const sql = `UPDATE pedidos SET tipoEntrega_id_tipo = ?, distancia_km = ?, peso_kg = ?
+            WHERE id_pedido = ?;`;
+        const values = [pTipoEntrega, pDistancia, pPeso, pIdPedido];
         const [rows] = await pool.query(sql, values);
         return rows;
     },
@@ -38,11 +61,6 @@ const pedidoModel = {
         return rows;
     },
 
-    listarPedidos: async () => {
-        const sql = 'SELECT * FROM pedidos;';
-        const [rows] = await pool.query(sql);
-        return rows;
-    }
 };
 
 module.exports = { pedidoModel };

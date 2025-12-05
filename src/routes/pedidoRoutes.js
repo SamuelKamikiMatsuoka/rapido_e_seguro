@@ -2,10 +2,9 @@ const express = require('express');
 const pedidoRoutes = express.Router();
 const { pedidoController } = require('../controllers/pedidoController');
 
-
+pedidoRoutes.get('/pedidos', pedidoController.selecionaPedidos);
 pedidoRoutes.post('/pedidos', pedidoController.criarPedido);
-pedidoRoutes.post('/pedidos/itens', pedidoController.criarItem);
-pedidoRoutes.put('/pedidos/itens/:idItem', pedidoController.alterarItem);
-pedidoRoutes.delete('/pedidos/:idPedido/itens/:idItem', pedidoController.excluirItem);
+pedidoRoutes.put('/pedidos/:idPedido',pedidoController.alterarPedido);
+pedidoRoutes.delete('/pedidos/:idPedido', pedidoController.excluirPedido);
 
 module.exports = { pedidoRoutes };

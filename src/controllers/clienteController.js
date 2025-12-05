@@ -30,7 +30,7 @@ const clienteController = {
             if (resultado.length === 0) {
                 return res.status(200).json({ message: 'A consulta não retornou resultados' });
             }
-            res.status(200).json({ data: resultado });
+            res.status(200).json({message: 'Consulta bem sucedida!', data: resultado });
 
         } catch (error) {
             console.error(error);
@@ -92,13 +92,32 @@ const clienteController = {
                 const { idCliente } = req.params;
                 const dados = req.body; 
         
-                const result = await clienteModel.updateClienteCompleto(idCliente, dados);
-        
-                if (result.affectedRows === 0) {
-                    return res.status(404).json({ message: "Cliente não encontrado" });
+                if (!dados) {
+                    return res.status(400).json({ message: 'Verifique os dados enviados e tente novamente' });
+                };
+    
+                const cpfExistente = await clienteModel.selectByCpf(dados.cpf)
+    
+                if (cpfExistente && cpfExistente.length > 0 ) {
+                    return res.status(409).json({ message: 'O CPF informado já existe no sistema. Não foi possivel realizar a alteração' });
                 }
-        
-                res.status(200).json({ message: "Cliente atualizado com sucesso" });
+    
+                const clienteAtual = await clienteModel.selectClienteById(idCliente);
+    
+                if (clienteAtual.length === 0) {
+                    return res.status(200).json({ message: 'Cliente não localizado' });
+                };
+    
+                const resultUpdate = await clienteModel.updateClienteCompleto(idCliente, dados);
+    
+                if (resultUpdate.affectedRows === 1 && resultUpdate.changedRows === 0) {
+                    return res.status(200).json({ message: 'Não há alterações a serem realizadas.' });
+                };
+    
+                if (resultUpdate.changedRows > 0) {
+                    res.status(200).json({ message: 'O registro foi alterado com sucesso.' });
+                };
+    
         
             } catch (error) {
                 console.error(error);

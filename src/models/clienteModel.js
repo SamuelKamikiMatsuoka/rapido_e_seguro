@@ -96,72 +96,89 @@ const clienteModel = {
         }
     },
 
-    updateClienteCompleto: async (id, dados) => {
+    updateClienteCompleto: async (pIdCliente, pDados) => {
         const connection = await pool.getConnection();
     
         try {
             await connection.beginTransaction();
     
-            // 1. Atualiza cliente
-            if (dados.nome || dados.cpf || dados.email) {
+            let totalAffected = 0;
+            let totalChanged = 0;
+    
+            if (pDados.nome || pDados.cpf || pDados.email) {
                 const campos = [];
                 const valores = [];
     
-                if (dados.nome) { campos.push("nome = ?"); valores.push(dados.nome); }
-                if (dados.cpf) { campos.push("cpf = ?"); valores.push(dados.cpf); }
-                if (dados.email) { campos.push("email = ?"); valores.push(dados.email); }
+                if (pDados.nome) { campos.push("nome = ?"); valores.push(pDados.nome); }
+                if (pDados.cpf) { campos.push("cpf = ?"); valores.push(pDados.cpf); }
+                if (pDados.email) { campos.push("email = ?"); valores.push(pDados.email); }
     
-                valores.push(id);
+                valores.push(pIdCliente);
     
-                await connection.query(
+                const [resultCliente] = await connection.query(
                     `UPDATE clientes SET ${campos.join(", ")} WHERE id_cliente = ?`,
                     valores
                 );
+    
+                totalAffected += resultCliente.affectedRows;
+                totalChanged += resultCliente.changedRows;
             }
     
-            // 2. Atualiza endereço (se tiver qualquer campo de endereço)
-            if (dados.cep || dados.numero || dados.complemento) {
-    
+            if (pDados.cep || pDados.numero || pDados.complemento) {
                 const campos = [];
                 const valores = [];
     
-                if (dados.cep) { campos.push("cep = ?"); valores.push(dados.cep); }
-                if (dados.numero) { campos.push("numero = ?"); valores.push(dados.numero); }
-                if (dados.complemento) { campos.push("complemento = ?"); valores.push(dados.complemento); }
+                if (pDados.cep) { campos.push("cep = ?"); valores.push(pDados.cep); }
+                if (pDados.numero) { campos.push("numero = ?"); valores.push(pDados.numero); }
+                if (pDados.complemento) { campos.push("complemento = ?"); valores.push(pDados.complemento); }
     
-                valores.push(id);
+                valores.push(pIdCliente);
     
-                await connection.query(
+                const [resultEndereco] = await connection.query(
                     `UPDATE enderecos 
                      SET ${campos.join(", ")}
                      WHERE clientes_id_cliente = ?`,
                     valores
                 );
+    
+                totalAffected += resultEndereco.affectedRows;
+                totalChanged += resultEndereco.changedRows;
             }
     
-            // 3. Telefones — se a requisição enviar telefones, então atualiza
-            if (dados.telefones && Array.isArray(dados.telefones)) {
-                await connection.query(`DELETE FROM telefones WHERE clientes_id_cliente = ?`, [id]);
+            if (pDados.telefones && Array.isArray(pDados.telefones)) {
+                const [delResult] = await connection.query(
+                    `DELETE FROM telefones WHERE clientes_id_cliente = ?`,
+                    [pIdCliente]
+                );
     
-                for (let tel of dados.telefones) {
-                    await connection.query(
+                totalAffected += delResult.affectedRows;
+                totalChanged += delResult.affectedRows; 
+    
+                for (let tel of pDados.telefones) {
+                    const [insertResult] = await connection.query(
                         `INSERT INTO telefones (telefone, clientes_id_cliente)
                          VALUES (?, ?)`,
-                        [tel, id]
+                        [tel, pIdCliente]
                     );
+    
+                    totalAffected += insertResult.affectedRows;
+                    totalChanged += insertResult.affectedRows; 
                 }
             }
     
             await connection.commit();
-            return { message: "Cliente atualizado com sucesso" };
+    
+            return {
+                affectedRows: totalAffected,
+                changedRows: totalChanged
+            };
     
         } catch (error) {
             await connection.rollback();
             throw error;
-        } finally {
-            connection.release();
         }
     },
+    
     
 
     deleteCliente: async (pIdCliente) => {
