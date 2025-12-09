@@ -10,7 +10,7 @@
 -- -----------------------------------------------------
 -- Schema rapido_&_seguro
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `rapido_&_seguro` DEFAULT CHARACTER SET utf8 ;
+CREATE SCHEMA IF NOT EXISTS `rapido_&_seguro`;
 USE `rapido_&_seguro` ;
 
 -- -----------------------------------------------------
@@ -35,6 +35,25 @@ CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`tipoEntrega` (
   PRIMARY KEY (`id_tipo`))
 ENGINE = InnoDB;
 
+INSERT INTO tipoEntrega (nome_tipo) VALUES 
+('Normal'),
+('Urgente');
+
+
+-- -----------------------------------------------------
+-- Table `rapido_&_seguro`.`parametrosCalculo`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`parametrosCalculo` (
+  `id_parametro` INT NOT NULL AUTO_INCREMENT,
+  `valor_distancia` DECIMAL(10,2) NOT NULL,
+  `valor_peso` DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (`id_parametro`)
+)
+ENGINE = InnoDB;
+
+INSERT INTO parametrosCalculo (valor_distancia, valor_peso) VALUES 
+(7,10);
+
 
 -- -----------------------------------------------------
 -- Table `rapido_&_seguro`.`Pedidos`
@@ -46,9 +65,11 @@ CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`Pedidos` (
   `peso_kg` DECIMAL(10,2) NOT NULL,
   `clientes_id_cliente` INT NOT NULL,
   `tipoEntrega_id_tipo` INT NOT NULL,
+  `id_parametro` INT NOT NULL,
   PRIMARY KEY (`id_pedido`),
   INDEX `fk_Pedidos_clientes1_idx` (`clientes_id_cliente` ASC) VISIBLE,
   INDEX `fk_Pedidos_tipoEntrega1_idx` (`tipoEntrega_id_tipo` ASC) VISIBLE,
+INDEX `fk_Pedidos_parametro1_idx` (`id_parametro` ASC) VISIBLE,
   CONSTRAINT `fk_Pedidos_clientes1`
     FOREIGN KEY (`clientes_id_cliente`)
     REFERENCES `rapido_&_seguro`.`clientes` (`id_cliente`)
@@ -57,6 +78,11 @@ CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`Pedidos` (
   CONSTRAINT `fk_Pedidos_tipoEntrega1`
     FOREIGN KEY (`tipoEntrega_id_tipo`)
     REFERENCES `rapido_&_seguro`.`tipoEntrega` (`id_tipo`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+    CONSTRAINT `fk_Pedidos_paramtro1`
+    FOREIGN KEY (`id_parametro`)
+    REFERENCES `rapido_&_seguro`.`parametroscalculo` (`id_parametro`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -70,6 +96,12 @@ CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`statusEntrega` (
   `nome_status` VARCHAR(20) NOT NULL DEFAULT 'calculando',
   PRIMARY KEY (`id_status`))
 ENGINE = InnoDB;
+
+INSERT INTO statusEntrega (nome_status) VALUES 
+('Calculando'),
+('Em transito'),
+('Entregue'),
+('Cancelado');
 
 
 -- -----------------------------------------------------
@@ -136,20 +168,10 @@ CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`telefones` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
+select * from enderecos;
 
--- -----------------------------------------------------
--- Table `rapido_&_seguro`.`parametrosCalculo`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`parametrosCalculo` (
-  `id_parametro` INT NOT NULL AUTO_INCREMENT,
-  `valor_distancia` DECIMAL(10,2) NOT NULL,
-  `valor_peso` DECIMAL(10,2) NOT NULL,
-  `Pedidos_id_pedido` INT NOT NULL,
-  PRIMARY KEY (`id_parametro`),
-  INDEX `fk_parametrosCalculo_Pedidos1_idx` (`Pedidos_id_pedido` ASC) VISIBLE,
-  CONSTRAINT `fk_parametrosCalculo_Pedidos1`
-    FOREIGN KEY (`Pedidos_id_pedido`)
-    REFERENCES `rapido_&_seguro`.`Pedidos` (`id_pedido`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
+
+--trigger para inserir as informações na tabela registroCalculos  (trg_insere_valores_calculados_after_insert)
+
+
+

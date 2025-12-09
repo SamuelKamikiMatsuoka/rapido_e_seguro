@@ -11,9 +11,9 @@ const pedidoModel = {
                 peso_kg,
                 cli.nome as nome_cliente,
                 tp.nome_tipo as tipo_entrega
-            from pedidos pe
-            join clientes cli on pe.clientes_id_cliente = cli.id_cliente
-            join tipoentrega tp on pe.tipoEntrega_id_tipo = tp.id_tipo;`;
+            FROM pedidos pe
+            JOIN clientes cli on pe.clientes_id_cliente = cli.id_cliente
+            JOIN tipoentrega tp on pe.tipoEntrega_id_tipo = tp.id_tipo;`;
         const [rows] = await pool.query(sql);
         return rows;
     },
@@ -27,9 +27,9 @@ const pedidoModel = {
                 peso_kg,
                 cli.nome as nome_cliente,
                 tp.nome_tipo as tipo_entrega
-            from pedidos pe
-            join clientes cli on pe.clientes_id_cliente = cli.id_cliente
-            join tipoentrega tp on pe.tipoEntrega_id_tipo = tp.id_tipo
+            FROM pedidos pe
+            JOIN clientes cli on pe.clientes_id_cliente = cli.id_cliente
+            JOIN tipoentrega tp on pe.tipoEntrega_id_tipo = tp.id_tipo
             WHERE id_pedido = ?;`;
         const values = [pIdpedido]
         const [rows] = await pool.query(sql, values);
@@ -43,6 +43,7 @@ const pedidoModel = {
         VALUES (?, ?, ?, ?, ?, ?);`;
         const values = [pData, pDistancia, pPeso, pIdCliente, pTipoEntrega, pIdParametro];
         const [rows] = await pool.query(sql, values);
+         // Tabela registrosCalculo tem seus valores inseridos com o acionamento da TRIGGER trg_calculo_entrega_after_insert
         return rows;
     },
 
@@ -52,14 +53,59 @@ const pedidoModel = {
             WHERE id_pedido = ?;`;
         const values = [pTipoEntrega, pDistancia, pPeso, pIdPedido];
         const [rows] = await pool.query(sql, values);
+        // Tabela registrosCalculo é atualizada com o acionamento da TRIGGER trg_atualiza_valor_calculo_after_update
         return rows;
     },
 
     deletePedido: async (pIdPedido) => {
         const sql = 'DELETE FROM pedidos WHERE id_pedido = ?;';
-        const [rows] = await pool.query(sql, [pIdPedido]);
+        const values = [pIdPedido];
+        const [rows] = await pool.query(sql, values);
         return rows;
     },
+
+    selectEntrega: async () => {
+        const sql = `
+            SELECT
+                Pedidos_id_pedido as id_pedido, 
+                cli.nome as nome_cliente,
+                valor_distancia, 
+                valor_peso, 
+                acrescimo, 
+                desconto,
+                taxa_extra, 
+                valor_final,
+                stat.nome_status as status
+            FROM registrosCalculo calc
+            JOIN statusEntrega stat on calc.statusEntrega_id_status = stat.id_status
+            JOIN pedidos ped on calc.pedidos_id_pedido = ped.id_pedido
+            JOIN clientes cli on ped.clientes_id_cliente = cli.id_cliente;`;
+        const [rows] = await pool.query(sql);
+        return rows;
+    },
+
+
+    selectEntregaById: async (pIdPedido) => {
+        const sql = `
+            SELECT
+                Pedidos_id_pedido as id_pedido, 
+                cli.nome as nome_cliente,
+                valor_distancia, 
+                valor_peso, 
+                acrescimo, 
+                desconto,
+                taxa_extra, 
+                valor_final,
+                stat.nome_status as status
+            FROM registrosCalculo calc
+            JOIN statusEntrega stat on calc.statusEntrega_id_status = stat.id_status
+            JOIN pedidos ped on calc.pedidos_id_pedido = ped.id_pedido
+            JOIN clientes cli on ped.clientes_id_cliente = cli.id_cliente
+            WHERE Pedidos_id_pedido = ?;`;
+        const values = [pIdPedido]
+        const [rows] = await pool.query(sql, values);
+        return rows;
+    }
 
 };
 

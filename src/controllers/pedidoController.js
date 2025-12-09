@@ -99,7 +99,25 @@ const pedidoController = {
             res.status(500).json({message: `Ocorreu um erro no servidor`, 
                 errorMessage: error.message});
         }
-    }
+    },
+
+
+    selecionaEntrega: async (req, res) => {
+        try {
+            const idPedido = req.query.idPedido;
+            const consulta = idPedido ? pedidoModel.selectEntregaById(idPedido) : pedidoModel.selectEntrega();
+            const resultado = await consulta;
+            if (resultado.length === 0) {
+                return res.status(200).json({ message: 'A consulta não retornou resultados' });
+            }
+            res.status(200).json({message: 'Consulta bem sucedida!', data: resultado });
+
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({message: `Ocorreu um erro no servidor`, 
+                errorMessage: error.message});
+        }
+    },
 };
 
 module.exports = { pedidoController };
