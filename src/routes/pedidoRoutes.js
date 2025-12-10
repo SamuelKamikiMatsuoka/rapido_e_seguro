@@ -2,63 +2,9 @@ const express = require('express');
 const pedidoRoutes = express.Router();
 const { pedidoController } = require('../controllers/pedidoController');
 
-/**
- * Módulo de Rotas para operações de Pedidos e Entregas.
- * Define os endpoints HTTP e os vincula aos métodos do controller.
- * @module routes/pedidoRoutes
- */
 
-/**
- * Rota para listar todos os pedidos ou buscar um específico via query string.
- * Exemplo: /pedidos?idPedido=10
- * @name GET /pedidos
- * @function
- * @memberof module:routes/pedidoRoutes
- * @inner
- * @see module:controllers/pedidoController.selecionaPedidos
- */
-pedidoRoutes.get('/pedidos', pedidoController.selecionaPedidos);
-
-/**
- * Rota para listar dados calculados das entregas (financeiro e status).
- * @name GET /pedidos/entregas
- * @function
- * @memberof module:routes/pedidoRoutes
- * @inner
- * @see module:controllers/pedidoController.selecionaEntrega
- */
-pedidoRoutes.get('/pedidos/entregas', pedidoController.selecionaEntrega);
-
-/**
- * Rota para criar um novo pedido.
- * @name POST /pedidos
- * @function
- * @memberof module:routes/pedidoRoutes
- * @inner
- * @see module:controllers/pedidoController.criarPedido
- */
 pedidoRoutes.post('/pedidos', pedidoController.criarPedido);
-
-/**
- * Rota para atualizar os dados de um pedido existente.
- * @name PUT /pedidos/:idPedido
- * @function
- * @memberof module:routes/pedidoRoutes
- * @inner
- * @param {string} :idPedido - ID do pedido na URL.
- * @see module:controllers/pedidoController.alterarPedido
- */
-pedidoRoutes.put('/pedidos/:idPedido', pedidoController.alterarPedido);
-
-/**
- * Rota para excluir um pedido.
- * @name DELETE /pedidos/:idPedido
- * @function
- * @memberof module:routes/pedidoRoutes
- * @inner
- * @param {string} :idPedido - ID do pedido na URL.
- * @see module:controllers/pedidoController.excluirPedido
- */
-pedidoRoutes.delete('/pedidos/:idPedido', pedidoController.excluirPedido);
+pedidoRoutes.put('/pedidos', pedidoController.alterarPedido);
+pedidoRoutes.delete('/pedidos', pedidoController.excluirPedido);
 
 module.exports = { pedidoRoutes };

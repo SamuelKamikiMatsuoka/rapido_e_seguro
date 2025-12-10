@@ -1,19 +1,7 @@
 const { pool } = require('../config/db');
 
-/**
- * Modelo responsável por gerenciar o acesso ao banco de dados para a tabela Clientes
- * e suas tabelas relacionadas (Endereços e Telefones).
- * @module models/clienteModel
- */
 const clienteModel = {
 
-    /**
-     * Busca todos os clientes cadastrados com seus respectivos endereços e telefones.
-     * Realiza JOINs entre as tabelas clientes, endereços e telefones.
-     * @async
-     * @function listarCliente
-     * @returns {Promise<Array<Object>>} Retorna uma lista de objetos contendo dados do cliente, endereço e telefone.
-     */
     listarCliente: async () => {
         const sql =
             `SELECT 
@@ -22,8 +10,6 @@ const clienteModel = {
 	            cpf, 
 	            email, 
 	            ender.cep, 
-                ender.numero,
-                ender.complemento,
 	            tel.telefone
             FROM clientes cli
             join enderecos ender on cli.id_cliente = ender.clientes_id_cliente
@@ -32,13 +18,6 @@ const clienteModel = {
         return rows;
     },
 
-    /**
-     * Busca um cliente específico pelo seu ID.
-     * @async
-     * @function selectClienteById
-     * @param {number} pIdCliente - O ID do cliente a ser buscado.
-     * @returns {Promise<Array<Object>>} Retorna um array (geralmente com 1 item) com os dados do cliente.
-     */
     selectClienteById: async (pIdCliente) => {
         const sql = `
             SELECT 
@@ -47,8 +26,6 @@ const clienteModel = {
 	            cpf, 
 	            email, 
 	            ender.cep, 
-                ender.numero,
-                ender.complemento,
 	            tel.telefone
             FROM clientes cli
             join enderecos ender on cli.id_cliente = ender.clientes_id_cliente
@@ -59,14 +36,6 @@ const clienteModel = {
         return rows;
     },
 
-    /**
-         * Verifica se um CPF já existe no banco de dados.
-         * Útil para validações antes de inserir ou atualizar.
-         * @async
-         * @function selectByCpf
-         * @param {string} pCpf - O CPF a ser verificado.
-         * @returns {Promise<Array<Object>>} Retorna o registro se encontrar, ou array vazio.
-         */
     selectByCpf: async (pCpf) => {
         const sql = 'SELECT cpf FROM clientes WHERE cpf =?;';
         const values = [pCpf]
@@ -74,26 +43,6 @@ const clienteModel = {
         return rows;
     },
 
-    /**
-         * Insere um cliente, seu endereço e telefones em uma única transação atômica.
-         * Se qualquer parte falhar, tudo é desfeito (Rollback).
-         * @async
-         * @function insertClienteCompleto
-         * @param {string} pNome - Nome completo.
-         * @param {string} pCpf - CPF (11 dígitos).
-         * @param {string} pEmail - E-mail.
-         * @param {Object} pEndereco - Objeto com dados do endereço.
-         * @param {string} pEndereco.rua - Logradouro.
-         * @param {string} pEndereco.bairro - Bairro.
-         * @param {string} pEndereco.cidade - Cidade.
-         * @param {string} pEndereco.uf - Estado (sigla).
-         * @param {string} pEndereco.cep - CEP.
-         * @param {string} pEndereco.numero - Número do endereço.
-         * @param {string} pEndereco.complemento - Complemento.
-         * @param {Array<string>} pTelefones - Array contendo os números de telefone.
-         * @returns {Promise<Object>} Retorna o ID do novo cliente gerado: `{ id_cliente: number }`.
-         * @throws {Error} Lança erro caso a transação falhe.
-         */
     insertClienteCompleto: async (pNome, pCpf, pEmail, pEndereco, pTelefones) => {
         const connection = await pool.getConnection();
 
@@ -104,7 +53,11 @@ const clienteModel = {
                 INSERT INTO clientes (nome, cpf, email)
                 VALUES (?, ?, ?);
             `;
-            const [rows] = await connection.query(sqlCliente, [pNome, pCpf, pEmail]);
+            const [rows] = await connection.query(sqlCliente, [
+                pNome,
+                pCpf,
+                pEmail
+            ]);
 
             const novoIdCliente = rows.insertId;
 
@@ -143,106 +96,13 @@ const clienteModel = {
         }
     },
 
-    /**
-     * Atualiza dados do cliente de forma dinâmica e transacional.
-     * Verifica quais campos foram passados para montar a query.
-     * @async
-     * @function updateClienteCompleto
-     * @param {number} pIdCliente - ID do cliente a ser atualizado.
-     * @param {Object} pDados - Objeto contendo APENAS os campos a serem alterados (ex: nome, email, cep, telefones).
-     * @returns {Promise<Object>} Retorna o total de linhas afetadas e alteradas no BD.
-     */
-    updateClienteCompleto: async (pIdCliente, pDados) => {
-        const connection = await pool.getConnection();
-
-        try {
-            await connection.beginTransaction();
-
-            let totalAffected = 0;
-            let totalChanged = 0;
-
-            if (pDados.nome || pDados.cpf || pDados.email) {
-                const campos = [];
-                const valores = [];
-
-                if (pDados.nome) { campos.push("nome = ?"); valores.push(pDados.nome); }
-                if (pDados.cpf) { campos.push("cpf = ?"); valores.push(pDados.cpf); }
-                if (pDados.email) { campos.push("email = ?"); valores.push(pDados.email); }
-
-                valores.push(pIdCliente);
-
-                const [resultCliente] = await connection.query(
-                    `UPDATE clientes SET ${campos.join(", ")} WHERE id_cliente = ?`,
-                    valores
-                );
-
-                totalAffected += resultCliente.affectedRows;
-                totalChanged += resultCliente.changedRows;
-            }
-
-            if (pDados.cep || pDados.numero || pDados.complemento) {
-                const campos = [];
-                const valores = [];
-
-                if (pDados.cep) { campos.push("cep = ?"); valores.push(pDados.cep); }
-                if (pDados.numero) { campos.push("numero = ?"); valores.push(pDados.numero); }
-                if (pDados.complemento) { campos.push("complemento = ?"); valores.push(pDados.complemento); }
-
-                valores.push(pIdCliente);
-
-                const [resultEndereco] = await connection.query(
-                    `UPDATE enderecos 
-                     SET ${campos.join(", ")}
-                     WHERE clientes_id_cliente = ?`,
-                    valores
-                );
-
-                totalAffected += resultEndereco.affectedRows;
-                totalChanged += resultEndereco.changedRows;
-            }
-
-            if (pDados.telefones && Array.isArray(pDados.telefones)) {
-                const [delResult] = await connection.query(
-                    `DELETE FROM telefones WHERE clientes_id_cliente = ?`,
-                    [pIdCliente]
-                );
-
-                totalAffected += delResult.affectedRows;
-                totalChanged += delResult.affectedRows;
-
-                for (let tel of pDados.telefones) {
-                    const [insertResult] = await connection.query(
-                        `INSERT INTO telefones (telefone, clientes_id_cliente)
-                         VALUES (?, ?)`,
-                        [tel, pIdCliente]
-                    );
-
-                    totalAffected += insertResult.affectedRows;
-                    totalChanged += insertResult.affectedRows;
-                }
-            }
-
-            await connection.commit();
-
-            return {
-                affectedRows: totalAffected,
-                changedRows: totalChanged
-            };
-
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        }
+    updateCliente: async (pIdCliente, nome, email) => {
+        const sql = `UPDATE clientes SET nome = ?, email = ?WHERE id_cliente = ?;`;
+        const values = [nome, email, pIdCliente];
+        const [rows] = await pool.query(sql, values);
+        return rows;
     },
 
-    /**
-     * Remove um cliente e seus dados vinculados (Cascata manual).
-     * Deleta primeiro telefones, depois endereços e por fim o cliente.
-     * @async
-     * @function deleteCliente
-     * @param {number} pIdCliente - ID do cliente a ser excluído.
-     * @returns {Promise<Object>} Retorna o resultado da exclusão na tabela clientes.
-     */
     deleteCliente: async (pIdCliente) => {
         const sqlTelefones = `DELETE FROM telefones WHERE clientes_id_cliente = ?;`;
         const sqlEnderecos = `DELETE FROM enderecos WHERE clientes_id_cliente = ?;`;

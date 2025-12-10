@@ -1,112 +1,86 @@
 const { pedidoModel } = require('../models/pedidoModel');
 
-/**
- * Controller responsável pelas operações de Pedidos e Entregas.
- * @module controllers/pedidoController
- */
 const pedidoController = {
 
-    /**
-     * Lista todos os pedidos ou busca um pedido específico pelo ID.
-     * Rota: GET /pedidos
-     * @async
-     * @function selecionaPedidos
-     * @param {Object} req - Objeto da requisição. Aceita `idPedido` via query param (?idPedido=1).
-     * @param {Object} res - Objeto da resposta.
-     * @returns {Promise<void>} Retorna lista de pedidos (200) ou mensagem de não encontrado.
-     */
-    selecionaPedidos: async (req, res) => {
-        try {
-            const idPedido = req.query.idPedido;
-            const consulta = idPedido ? pedidoModel.selectPedidoById(idPedido) : pedidoModel.listarPedido();
-            const resultado = await consulta;
-            if (resultado.length === 0) {
-                return res.status(200).json({ message: 'A consulta não retornou resultados' });
-            }
-            res.status(200).json({ message: 'Consulta bem sucedida!', data: resultado });
 
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({
-                message: `Ocorreu um erro no servidor`,
-                errorMessage: error.message
-            });
-        }
-    },
-
-    /**
-         * Cria um novo pedido no sistema.
-         * Rota: POST /pedidos
-         * @async
-         * @function criarPedido
-         * @param {Object} req - Objeto da requisição.
-         * @param {Object} req.body - Corpo da requisição com os dados do pedido.
-         * @param {string} req.body.data_pedido - Data do pedido.
-         * @param {number} req.body.distancia_km - Distância total da entrega.
-         * @param {number} req.body.peso_kg - Peso total do pedido.
-         * @param {number} req.body.id_cliente - ID do cliente solicitante.
-         * @param {number} req.body.id_tipoEntrega - ID do tipo de entrega (ex: Expresso, Padrão).
-         * @param {number} req.body.id_parametro - ID dos parâmetros de cálculo.
-         * @param {Object} res - Objeto da resposta.
-         * @returns {Promise<void>} Retorna 201 (Criado) ou 400 (Dados incompletos).
-         */
     criarPedido: async (req, res) => {
+        console.log("REQ BODY →", req.body);
+
         try {
-            const { data_pedido, distancia_km, peso_kg, id_cliente, id_tipoEntrega, id_parametro } = req.body;
+            const {
+                clientes_id_cliente,
+                data_pedido,
+                tipoEntrega_id_tipo,
+                distancia_km,
+                peso_kg
+            } = req.body || {};
 
-            if (!data_pedido || !distancia_km || !peso_kg || !id_cliente || !id_tipoEntrega || !id_parametro) {
-                return res.status(400).json({ message: 'Verifique os dados enviados e tente novamente' });
-            }
-
-            const resultado = await pedidoModel.insertPedido(data_pedido, distancia_km, peso_kg, id_cliente, id_tipoEntrega, id_parametro);
-
-            res.status(201).json({ message: 'Registro incluido com sucesso!', data: resultado });
-
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: 'Ocorreu um erro no servidor', errorMessage: error.message });
-
-        };
-
-    },
-
-
-    /**
-       * Atualiza dados de entrega de um pedido existente.
-       * Rota: PUT /pedidos/:idPedido
-       * @async
-       * @function alterarPedido
-       * @param {Object} req - Objeto da requisição. Espera `idPedido` na URL.
-       * @param {Object} req.body - Corpo contendo: id_tipoEntrega, distancia_km, peso_kg.
-       * @param {Object} res - Objeto da resposta.
-       * @returns {Promise<void>} Retorna 200 (Atualizado/Sem alterações) ou 404 (Pedido não encontrado).
-       */
-    alterarPedido: async (req, res) => {
-        try {
-            const { idPedido } = req.params
-            const { id_tipoEntrega, distancia_km, peso_kg } = req.body;
-
-            if (!idPedido || !id_tipoEntrega || !distancia_km || !peso_kg) {
+            
+            if (!clientes_id_cliente || !data_pedido || !tipoEntrega_id_tipo ||
+                !distancia_km || !peso_kg) {
                 return res.status(400).json({
                     message: "Dados incompletos no corpo da requisição"
                 });
             }
 
-            const pedidoAtual = await pedidoModel.selectPedidoById(idPedido);
+            // 🔎 Inserção
+            const result = await pedidoModel.insertPedido(
+                clientes_id_cliente,
+                data_pedido,
+                tipoEntrega_id_tipo,
+                distancia_km,
+                peso_kg
+            );
+
+            res.status(201).json({
+                message: "Pedido criado com sucesso",
+                result
+            });
+
+        } catch (error) {
+            res.status(500).json({
+                message: "Ocorreu um erro no servidor",
+                errorMessage: error.message
+            });
+        }
+    },
+
+  
+
+    alterarPedido: async (req, res) => {
+        try {
+            const {
+                id_pedido,
+                tipoEntrega_id_tipo,
+                distancia_km,
+                peso_kg
+            } = req.body || {};
+
+
+            if (!id_pedido || !tipoEntrega_id_tipo || !distancia_km || !peso_kg) {
+                return res.status(400).json({
+                    message: "Dados incompletos no corpo da requisição"
+                });
+            }
+
+           
+            const pedidoAtual = await pedidoModel.selectPedidoById(id_pedido);
             if (!pedidoAtual.length) {
                 return res.status(404).json({ message: "Pedido não encontrado" });
             }
 
-            const result = await pedidoModel.updatePedido(idPedido, id_tipoEntrega, distancia_km, peso_kg);
+      
+            const result = await pedidoModel.updatePedido(
+                id_pedido,
+                tipoEntrega_id_tipo,
+                distancia_km,
+                peso_kg
+            );
 
-            if (result.affectedRows === 1 && result.changedRows === 0) {
-                return res.status(200).json({ message: 'Não há alterações a serem realizadas' });
-            };
-
-            if (result.affectedRows === 1 && result.changedRows === 1) {
-                res.status(200).json({ message: "Pedido atualizado com sucesso", result });
-            };
-
+            res.status(200).json({
+                message: "Pedido atualizado com sucesso",
+                result
+            });
 
         } catch (error) {
             res.status(500).json({
@@ -116,68 +90,34 @@ const pedidoController = {
         }
     },
 
-    /**
-     * Exclui um pedido do sistema.
-     * Rota: DELETE /pedidos/:idPedido
-     * @async
-     * @function excluirPedido
-     * @param {Object} req - Objeto da requisição. Espera `idPedido` na URL.
-     * @param {Object} res - Objeto da resposta.
-     * @returns {Promise<void>} Retorna mensagem de sucesso ou erro se não conseguir excluir.
-     */
     excluirPedido: async (req, res) => {
         try {
-            const idPedido = Number(req.params.idPedido);
+            const { id_pedido } = req.body || {};
 
-            if (!idPedido || !Number.isInteger(idPedido)) {
-                return res.status(400).json({ message: 'Forneça um indentificador válido' });
+            if (!id_pedido) {
+                return res.status(400).json({ message: "Informe o id_pedido" });
             }
 
-            const resultadoDelete = await pedidoModel.deletePedido(idPedido);
-            console.log(resultadoDelete.affectedRows);
+            const pedidoSelecionado = await pedidoModel.selectPedidoById(id_pedido);
 
-            if (resultadoDelete.affectedRows == 0) {
-                return res.status(200).json({ message: 'Ocorreu um erro ao excluir o item.' })
-            };
+            if (!pedidoSelecionado.length) {
+                return res.status(404).json({ message: "Pedido não encontrado" });
+            }
 
-            res.status(200).json({ message: 'Item excluído com sucesso!', data: resultadoDelete });
+            const result = await pedidoModel.deletePedido(id_pedido);
+
+            res.status(200).json({
+                message: "Pedido excluído com sucesso",
+                result
+            });
 
         } catch (error) {
-            console.error(error);
             res.status(500).json({
-                message: `Ocorreu um erro no servidor`,
+                message: "Erro no servidor",
                 errorMessage: error.message
             });
         }
-    },
-
-    /**
-     * Lista informações específicas sobre as entregas.
-     * Rota: GET /entregas (ou rota específica definida no router).
-     * @async
-     * @function selecionaEntrega
-     * @param {Object} req - Objeto da requisição. Aceita `idPedido` via query param.
-     * @param {Object} res - Objeto da resposta.
-     * @returns {Promise<void>} Retorna dados da entrega (200) ou mensagem de vazio.
-     */
-    selecionaEntrega: async (req, res) => {
-        try {
-            const idPedido = req.query.idPedido;
-            const consulta = idPedido ? pedidoModel.selectEntregaById(idPedido) : pedidoModel.selectEntrega();
-            const resultado = await consulta;
-            if (resultado.length === 0) {
-                return res.status(200).json({ message: 'A consulta não retornou resultados' });
-            }
-            res.status(200).json({ message: 'Consulta bem sucedida!', data: resultado });
-
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({
-                message: `Ocorreu um erro no servidor`,
-                errorMessage: error.message
-            });
-        }
-    },
+    }
 };
 
 module.exports = { pedidoController };

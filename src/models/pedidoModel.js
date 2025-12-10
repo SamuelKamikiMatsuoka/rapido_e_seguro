@@ -1,174 +1,50 @@
 const { pool } = require('../config/db');
 
-/**
- * Modelo responsável pelo gerenciamento de dados da tabela Pedidos e visualização das Entregas (Cálculos).
- * @module models/pedidoModel
- */
 const pedidoModel = {
 
-    /**
-     * Lista todos os pedidos cadastrados, trazendo dados do cliente e tipo de entrega.
-     * Realiza JOIN com tabelas `clientes` e `tipoentrega`.
-     * @async
-     * @function listarPedido
-     * @returns {Promise<Array<Object>>} Retorna lista de pedidos completos.
-     */
-    listarPedido: async () => {
-        const sql =
-            ` SELECT 
-	            id_pedido,
-                data_pedido,
-                distancia_km,
-                peso_kg,
-                cli.nome as nome_cliente,
-                tp.nome_tipo as tipo_entrega
-            FROM pedidos pe
-            JOIN clientes cli on pe.clientes_id_cliente = cli.id_cliente
-            JOIN tipoentrega tp on pe.tipoEntrega_id_tipo = tp.id_tipo;`;
-        const [rows] = await pool.query(sql);
+    selectPedidoById: async (pIdPedido) => {
+        const sql = 'SELECT * FROM pedidos WHERE id_pedido = ?;';
+        const [rows] = await pool.query(sql, [pIdPedido]);
         return rows;
     },
 
-    /**
-         * Busca um pedido específico pelo ID.
-         * @async
-         * @function selectPedidoById
-         * @param {number} pIdpedido - ID do pedido a ser consultado.
-         * @returns {Promise<Array<Object>>} Retorna os dados do pedido solicitado.
-         */
-    selectPedidoById: async (pIdpedido) => {
-        const sql = `
-            SELECT 
-	            id_pedido,
-                data_pedido,
-                distancia_km,
-                peso_kg,
-                cli.nome as nome_cliente,
-                tp.nome_tipo as tipo_entrega
-            FROM pedidos pe
-            JOIN clientes cli on pe.clientes_id_cliente = cli.id_cliente
-            JOIN tipoentrega tp on pe.tipoEntrega_id_tipo = tp.id_tipo
-            WHERE id_pedido = ?;`;
-        const values = [pIdpedido]
-        const [rows] = await pool.query(sql, values);
-        return rows;
-    },
-
-    /**
-         * Insere um novo pedido no banco de dados.
-         * **Nota:** Após a inserção, uma TRIGGER no banco de dados (`trg_calculo_entrega_after_insert`) 
-         * é disparada para calcular automaticamente os valores na tabela `registrosCalculo`.
-         * @async
-         * @function insertPedido
-         * @param {string} pData - Data do pedido (formato YYYY-MM-DD ou Date object).
-         * @param {number} pDistancia - Distância em KM.
-         * @param {number} pPeso - Peso em KG.
-         * @param {number} pIdCliente - ID do cliente dono do pedido.
-         * @param {number} pTipoEntrega - ID do tipo de entrega.
-         * @param {number} pIdParametro - ID dos parâmetros utilizados para o cálculo.
-         * @returns {Promise<Object>} Retorna o resultado da inserção.
-         */
-    insertPedido: async (pData, pDistancia, pPeso, pIdCliente, pTipoEntrega, pIdParametro) => {
-        const sql = `
+ insertPedido: async (pData_pedido, pDistancia_km, pPeso_kg, pClientes_id_cliente, pTipoEntrega_id_tipo) => {
+    const sql = `
         INSERT INTO pedidos
-        (data_pedido, distancia_km, peso_kg, clientes_id_cliente, tipoEntrega_id_tipo, id_parametro)
-        VALUES (?, ?, ?, ?, ?, ?);`;
-        const values = [pData, pDistancia, pPeso, pIdCliente, pTipoEntrega, pIdParametro];
+        (data_pedido, distancia_km, peso_kg, clientes_id_cliente, tipoEntrega_id_tipo)
+        VALUES (?, ?, ?, ?, ?);
+    `;
+
+    const values = [pData_pedido, pDistancia_km, pPeso_kg, pClientes_id_cliente, pTipoEntrega_id_tipo];
+
+    const [rows] = await pool.query(sql, values);
+    return rows;
+},
+
+
+
+    updatePedido: async (pIdPedido, pTipoEntrega_id_tipo, pDistancia_km, pPeso_kg) => {
+        const sql = `
+            UPDATE pedidos
+            SET tipoEntrega_id_tipo = ?, distancia_km = ?, peso_kg = ?
+            WHERE id_pedido = ?;
+        `;
+        const values = [pTipoEntrega_id_tipo, pDistancia_km, pPeso_kg, pIdPedido];
         const [rows] = await pool.query(sql, values);
-        // Tabela registrosCalculo tem seus valores inseridos com o acionamento da TRIGGER trg_calculo_entrega_after_insert
         return rows;
     },
 
-    /**
-         * Atualiza os dados de entrega de um pedido (tipo, distância e peso).
-         * **Nota:** Após a atualização, uma TRIGGER (`trg_atualiza_valor_calculo_after_update`) 
-         * recalcula os valores financeiros na tabela `registrosCalculo`.
-         * @async
-         * @function updatePedido
-         * @param {number} pIdPedido - ID do pedido a ser alterado.
-         * @param {number} pTipoEntrega - Novo ID do tipo de entrega.
-         * @param {number} pDistancia - Nova distância.
-         * @param {number} pPeso - Novo peso.
-         * @returns {Promise<Object>} Retorna o resultado da atualização.
-         */
-    updatePedido: async (pIdPedido, pTipoEntrega, pDistancia, pPeso) => {
-        const sql = `UPDATE pedidos SET tipoEntrega_id_tipo = ?, distancia_km = ?, peso_kg = ?
-            WHERE id_pedido = ?;`;
-        const values = [pTipoEntrega, pDistancia, pPeso, pIdPedido];
-        const [rows] = await pool.query(sql, values);
-        // Tabela registrosCalculo é atualizada com o acionamento da TRIGGER trg_atualiza_valor_calculo_after_update
-        return rows;
-    },
-
-    /**
-     * Remove um pedido do sistema.
-     * @async
-     * @function deletePedido
-     * @param {number} pIdPedido - ID do pedido a ser excluído.
-     * @returns {Promise<Object>} Resultado da exclusão.
-     */
     deletePedido: async (pIdPedido) => {
         const sql = 'DELETE FROM pedidos WHERE id_pedido = ?;';
-        const values = [pIdPedido];
-        const [rows] = await pool.query(sql, values);
+        const [rows] = await pool.query(sql, [pIdPedido]);
         return rows;
     },
 
-    /**
-     * Busca os detalhes financeiros e de status da entrega (join com `registrosCalculo`).
-     * @async
-     * @function selectEntrega
-     * @returns {Promise<Array<Object>>} Lista com valores (distância, peso, acrescimo, total) e status.
-     */
-    selectEntrega: async () => {
-        const sql = `
-            SELECT
-                Pedidos_id_pedido as id_pedido, 
-                cli.nome as nome_cliente,
-                valor_distancia, 
-                valor_peso, 
-                acrescimo, 
-                desconto,
-                taxa_extra, 
-                valor_final,
-                stat.nome_status as status
-            FROM registrosCalculo calc
-            JOIN statusEntrega stat on calc.statusEntrega_id_status = stat.id_status
-            JOIN pedidos ped on calc.pedidos_id_pedido = ped.id_pedido
-            JOIN clientes cli on ped.clientes_id_cliente = cli.id_cliente;`;
+    listarPedidos: async () => {
+        const sql = 'SELECT * FROM pedidos;';
         const [rows] = await pool.query(sql);
         return rows;
-    },
-
-    /**
-         * Busca os detalhes financeiros e de status de um pedido específico.
-         * @async
-         * @function selectEntregaById
-         * @param {number} pIdPedido - ID do pedido.
-         * @returns {Promise<Array<Object>>} Dados calculados da entrega específica.
-         */
-    selectEntregaById: async (pIdPedido) => {
-        const sql = `
-            SELECT
-                Pedidos_id_pedido as id_pedido, 
-                cli.nome as nome_cliente,
-                valor_distancia, 
-                valor_peso, 
-                acrescimo, 
-                desconto,
-                taxa_extra, 
-                valor_final,
-                stat.nome_status as status
-            FROM registrosCalculo calc
-            JOIN statusEntrega stat on calc.statusEntrega_id_status = stat.id_status
-            JOIN pedidos ped on calc.pedidos_id_pedido = ped.id_pedido
-            JOIN clientes cli on ped.clientes_id_cliente = cli.id_cliente
-            WHERE Pedidos_id_pedido = ?;`;
-        const values = [pIdPedido]
-        const [rows] = await pool.query(sql, values);
-        return rows;
     }
-
 };
 
 module.exports = { pedidoModel };
