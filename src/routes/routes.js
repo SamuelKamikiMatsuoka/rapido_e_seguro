@@ -16,6 +16,7 @@ const { pedidoRoutes } = require('./pedidoRoutes');
  * Todas as rotas definidas em clienteRoutes ficarão acessíveis a partir da raiz '/'.
  */
 router.use('/', clienteRoutes);
+router.use('/', pedidoRoutes);
 
 /**
  * Combina as rotas de Pedidos ao router principal.
