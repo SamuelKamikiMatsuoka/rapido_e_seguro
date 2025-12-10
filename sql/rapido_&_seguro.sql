@@ -103,6 +103,7 @@ INSERT INTO statusEntrega (nome_status) VALUES
 ('Entregue'),
 ('Cancelado');
 
+select * from statusEntrega;
 
 -- -----------------------------------------------------
 -- Table `rapido_&_seguro`.`RegistrosCalculo`
@@ -132,6 +133,7 @@ CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`RegistrosCalculo` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
+select * from registrosCalculo;
 
 -- -----------------------------------------------------
 -- Table `rapido_&_seguro`.`enderecos`
@@ -168,10 +170,162 @@ CREATE TABLE IF NOT EXISTS `rapido_&_seguro`.`telefones` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
-select * from enderecos;
-
-
---trigger para inserir as informações na tabela registroCalculos  (trg_insere_valores_calculados_after_insert)
 
 
 
+
+
+-- trigger para inserir as informações na tabela registroCalculos  (trg_calculo_entrega_after_insert)
+DELIMITER $$
+
+CREATE TRIGGER trg_calculo_entrega_after_insert
+AFTER INSERT ON Pedidos
+FOR EACH ROW
+BEGIN
+    DECLARE v_valor_km DECIMAL(10,2);
+    DECLARE v_valor_kg DECIMAL(10,2);
+
+    DECLARE v_valor_distancia DECIMAL(10,2);
+    DECLARE v_valor_peso DECIMAL(10,2);
+    DECLARE v_valor_base DECIMAL(10,2);
+
+    DECLARE v_acrescimo DECIMAL(10,2) DEFAULT 0;
+    DECLARE v_desconto DECIMAL(10,2) DEFAULT 0;
+    DECLARE v_taxa_extra DECIMAL(10,2) DEFAULT 0;
+    DECLARE v_valor_final DECIMAL(10,2);
+
+    DECLARE v_nome_tipo VARCHAR(20);
+
+    -- Buscar parâmetros de preço
+    SELECT valor_distancia, valor_peso
+    INTO v_valor_km, v_valor_kg
+    FROM parametrosCalculo
+    WHERE id_parametro = NEW.id_parametro;
+
+    -- Buscar nome do tipo de entrega
+    SELECT nome_tipo
+    INTO v_nome_tipo
+    FROM tipoEntrega
+    WHERE id_tipo = NEW.tipoEntrega_id_tipo;
+
+    -- 1) Calcular valor da distância
+    SET v_valor_distancia = NEW.distancia_km * v_valor_km;
+
+    -- 2) Calcular valor do peso
+    SET v_valor_peso = NEW.peso_kg * v_valor_kg;
+
+    -- 3) Calcular valor base
+    SET v_valor_base = v_valor_distancia + v_valor_peso;
+
+    -- 4) Acréscimo se urgente (20%)
+    IF v_nome_tipo = 'Urgente' THEN
+        SET v_acrescimo = v_valor_base * 0.20;
+    END IF;
+
+    -- valor final preliminar
+    SET v_valor_final = v_valor_base + v_acrescimo;
+
+    -- 5) Desconto se valor final > 500 (10%)
+    IF v_valor_final > 500 THEN
+        SET v_desconto = v_valor_final * 0.10;
+        SET v_valor_final = v_valor_final - v_desconto;
+    END IF;
+
+    -- 6) Taxa extra se peso > 50kg
+    IF NEW.peso_kg > 50 THEN
+        SET v_taxa_extra = 15.00;
+        SET v_valor_final = v_valor_final + v_taxa_extra;
+    END IF;
+
+    -- Inserir resultado final na tabela
+    INSERT INTO RegistrosCalculo
+    (Pedidos_id_pedido, valor_distancia, valor_peso, acrescimo, desconto, taxa_extra, valor_final, statusEntrega_id_status)
+    VALUES
+    (NEW.id_pedido, v_valor_distancia, v_valor_peso, v_acrescimo, v_desconto, v_taxa_extra, v_valor_final, 9);
+
+END$$
+
+DELIMITER ;
+
+ALTER TABLE registroscalculo
+DROP FOREIGN KEY fk_RegistrosCalculo_Pedidos1;
+
+ALTER TABLE registroscalculo
+MODIFY COLUMN Pedidos_id_pedido INT NULL;
+
+ALTER TABLE registroscalculo
+ADD CONSTRAINT fk_RegistrosCalculo_Pedidos1
+FOREIGN KEY (Pedidos_id_pedido)
+REFERENCES pedidos(id_pedido)
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+
+-- trigger para atualziar as informações na tabela registroCalculos apos update em pedidos (trg_atualiza_valor_calculo_after_update)
+DELIMITER $$
+
+CREATE TRIGGER trg_atualiza_valor_calculo_after_update
+AFTER UPDATE ON pedidos
+FOR EACH ROW
+BEGIN
+    DECLARE v_valor_distancia DECIMAL(10,2);
+    DECLARE v_valor_peso DECIMAL(10,2);
+    DECLARE v_valor_base DECIMAL(10,2);
+    DECLARE v_acrescimo DECIMAL(10,2);
+    DECLARE v_desconto DECIMAL(10,2);
+    DECLARE v_taxa_extra DECIMAL(10,2);
+    DECLARE v_valor_final DECIMAL(10,2);
+    DECLARE v_valor_km DECIMAL(10,2);
+    DECLARE v_valor_kg DECIMAL(10,2);
+
+    -- Buscar valores de parâmetro
+    SELECT valor_distancia, valor_peso
+    INTO v_valor_km, v_valor_kg
+    FROM parametrosCalculo
+    WHERE id_parametro = NEW.id_parametro;
+
+    -- Cálculo base
+    SET v_valor_distancia = NEW.distancia_km * v_valor_km;
+    SET v_valor_peso = NEW.peso_kg * v_valor_kg;
+    SET v_valor_base = v_valor_distancia + v_valor_peso;
+
+    -- Acréscimo (urgente = 20%)
+    IF NEW.tipoEntrega_id_tipo = 2 THEN
+        SET v_acrescimo = v_valor_base * 0.20;
+    ELSE
+        SET v_acrescimo = 0;
+    END IF;
+
+    -- Valor inicial com acréscimo
+    SET v_valor_final = v_valor_base + v_acrescimo;
+
+    -- Desconto se > 500
+    IF v_valor_final > 500 THEN
+        SET v_desconto = v_valor_final * 0.10;
+        SET v_valor_final = v_valor_final - v_desconto;
+    ELSE
+        SET v_desconto = 0;
+    END IF;
+
+    -- Taxa extra peso > 50 kg
+    IF NEW.peso_kg > 50 THEN
+        SET v_taxa_extra = 15.00;
+        SET v_valor_final = v_valor_final + v_taxa_extra;
+    ELSE
+        SET v_taxa_extra = 0;
+    END IF;
+
+    -- Atualizar a tabela registrosCalculo
+    UPDATE registrosCalculo
+    SET valor_distancia = v_valor_distancia,
+        valor_peso = v_valor_peso,
+        acrescimo = v_acrescimo,
+        desconto = v_desconto,
+        taxa_extra = v_taxa_extra,
+        valor_final = v_valor_final,
+        statusEntrega_id_status = 9 
+    WHERE Pedidos_id_pedido = NEW.id_pedido;
+
+END $$
+
+DELIMITER ;
