@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Home</title>
+    <title>JSDoc: Source: server.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,146 +17,55 @@
 
 <div id="main">
 
-    <h1 class="page-title">Home</h1>
+    <h1 class="page-title">Source: server.js</h1>
 
     
 
 
 
     
-
-
-    <h3> </h3>
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
     <section>
-        <article><h1>Projeto Rápido e Seguro</h1>
-<p>Esta é a documentação da API do projeto Rápido e Seguro.</p>
-<h2>Como rodar o projeto</h2>
-<ol>
-<li>Instale as dependências: <code>npm install</code></li>
-<li>Rode o servidor: <code>nodemon .\server.js</code></li>
-<li>Gere a documentação: <code>npm run doc</code></li>
-</ol></article>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file Arquivo principal da API Rápido e Seguro.
+ * Responsável por inicializar o servidor Express, configurar middlewares globais
+ * e carregar o centralizador de rotas.
+ * @version 1.0.0
+ * @author Equipe Rápido e Seguro
+ */
+const express = require('express');
+const app = express();
+
+/**
+ * Porta em que o servidor HTTP irá escutar as requisições.
+ * @constant {number}
+ * @default 8081
+ */
+const PORT = 8081;
+
+const { router } = require('./src/routes/routes');
+
+/**
+ * Middleware integrado do Express.
+ * Habilita o parseamento de requisições com payload JSON (req.body).
+ */
+app.use(express.json());
+
+/**
+ * Importa e utiliza o roteador centralizado.
+ * Todas as rotas (Clientes, Pedidos) passarão por aqui.
+ */
+app.use('/', router);
+
+/**
+ * Inicia o servidor e fica escutando conexões na porta especificada.
+ * Exibe uma mensagem no console quando o servidor estiver pronto.
+ */
+app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+})</code></pre>
+        </article>
     </section>
-
-
-
-
-
-
-
-
-
-<section>
-
-<header>
-    
-        <h2>server.js</h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description">Arquivo principal da API Rápido e Seguro.Responsável por inicializar o servidor Express, configurar middlewares globaise carregar o centralizador de rotas.</div>
-        
-
-        
-
-
-<dl class="details">
-
-    
-    <dt class="tag-version">Version:</dt>
-    <dd class="tag-version"><ul class="dummy"><li>1.0.0</li></ul></dd>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-author">Author:</dt>
-    <dd class="tag-author">
-        <ul>
-            <li>Equipe Rápido e Seguro</li>
-        </ul>
-    </dd>
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="server.js.html">server.js</a>, <a href="server.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</article>
-
-</section>
 
 
 
