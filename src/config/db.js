@@ -1,5 +1,22 @@
 const mysql = require('mysql2/promise');
 
+/**
+ * Módulo de configuração e conexão com o banco de dados MySQL.
+ * Utiliza um Pool de conexões para gerenciar múltiplas requisições simultâneas de forma eficiente.
+ * @module config/db
+ */
+
+/**
+ * Cria o pool de conexões com as configurações definidas.
+ * @type {Object}
+ * @constant
+ * @property {string} host - Endereço do servidor (localhost).
+ * @property {string} user - Usuário do banco.
+ * @property {string} password - Senha do banco.
+ * @property {string} database - Nome do banco de dados (rapido_&_seguro).
+ * @property {number} connectionLimit - Limite máximo de conexões simultâneas (10).
+ */
+
 const pool = mysql.createPool({
   host: '10.87.169.24',
   user: 'samurai',
@@ -11,7 +28,12 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// função imediatamente invocada
+/**
+ * Função imediatamente invocada para testar a conectividade com o banco ao iniciar a aplicação.
+ * @async
+ * @function testeConexao
+ * @returns {Promise<void>} Loga no console o sucesso ou erro da conexão.
+ */
 (async () => {
   try {
       const connection = await pool.getConnection();
