@@ -108,9 +108,11 @@ const pedidoModel = {
      * @returns {Promise<Object>} Resultado da exclusão.
      */
     deletePedido: async (pIdPedido) => {
-        const sql = 'DELETE FROM pedidos WHERE id_pedido = ?;';
+        const sqlPedidos = 'DELETE FROM pedidos WHERE id_pedido = ?;';
+        const sqlResgistrosCalc = 'DELETE FROM registrosCalculo WHERE Pedidos_id_pedido = ?;';
         const values = [pIdPedido];
-        const [rows] = await pool.query(sql, values);
+        await pool.query(sqlResgistrosCalc, values)
+        const [rows] = await pool.query(sqlPedidos, values);
         return rows;
     },
 
