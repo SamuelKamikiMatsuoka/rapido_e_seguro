@@ -184,11 +184,9 @@ FOR EACH ROW
 BEGIN
     DECLARE v_valor_km DECIMAL(10,2);
     DECLARE v_valor_kg DECIMAL(10,2);
-
     DECLARE v_valor_distancia DECIMAL(10,2);
     DECLARE v_valor_peso DECIMAL(10,2);
     DECLARE v_valor_base DECIMAL(10,2);
-
     DECLARE v_acrescimo DECIMAL(10,2) DEFAULT 0;
     DECLARE v_desconto DECIMAL(10,2) DEFAULT 0;
     DECLARE v_taxa_extra DECIMAL(10,2) DEFAULT 0;
@@ -261,7 +259,7 @@ ON DELETE SET NULL
 ON UPDATE CASCADE;
 
 
--- trigger para atualziar as informações na tabela registroCalculos apos update em pedidos (trg_atualiza_valor_calculo_after_update)
+-- trigger para atualizar as informações na tabela registroCalculos apos update em pedidos (trg_atualiza_valor_calculo_after_update)
 DELIMITER $$
 
 CREATE TRIGGER trg_atualiza_valor_calculo_after_update

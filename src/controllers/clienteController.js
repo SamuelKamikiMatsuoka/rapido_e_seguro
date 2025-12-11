@@ -187,11 +187,17 @@ const clienteController = {
 
             const resultado = await clienteModel.deleteCliente(idCliente);
 
+            if (resultado.clienteTemPedidos) {
+                return res.status(400).json({
+                    message: "Não é possível excluir um cliente que possui pedidos cadastrados."
+                });
+            }
+
             if (resultado.affectedRows === 0) {
                 return res.status(200).json({ message: "cliente não encontrado" });
             }
 
-            res.status(200).json({ message: "cliente deletado" });
+            res.status(200).json({ message: "cliente deletado", data: resultado });
 
         } catch (error) {
             console.error(error);

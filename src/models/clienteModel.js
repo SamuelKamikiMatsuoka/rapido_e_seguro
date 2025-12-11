@@ -244,17 +244,39 @@ const clienteModel = {
      * @returns {Promise<Object>} Retorna o resultado da exclusão na tabela clientes.
      */
     deleteCliente: async (pIdCliente) => {
-        const sqlPedidos = `DELETE FROM pedidos WHERE clientes_id_cliente = ?;`;
-        const sqlTelefones = `DELETE FROM telefones WHERE clientes_id_cliente = ?;`;
-        const sqlEnderecos = `DELETE FROM enderecos WHERE clientes_id_cliente = ?;`;
-        const sqlClientes = `DELETE FROM clientes WHERE id_cliente = ?;`;
-        const values = [pIdCliente];
-        await pool.query(sqlPedidos, values)
-        await pool.query(sqlTelefones, values);
-        await pool.query(sqlEnderecos, values);
-        const [rows] = await pool.query(sqlClientes, values);
-        return rows;
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            const values = [pIdCliente];
+
+            const sqlSeTemPedidos = `SELECT COUNT(*) AS total FROM pedidos WHERE clientes_id_cliente = ?;`;
+            const [result] = await connection.query(sqlSeTemPedidos, values);
+       
+            if (result[0].total > 0) {               
+                return { clienteTemPedidos: true };
+            }
+    
+            const sqlTelefones = `DELETE FROM telefones WHERE clientes_id_cliente = ?;`;
+            await connection.query(sqlTelefones, values);
+
+
+            const sqlEnderecos = `DELETE FROM enderecos WHERE clientes_id_cliente = ?;`;
+            await connection.query(sqlEnderecos, values);
+    
+  
+            const sqlCliente = `DELETE FROM clientes WHERE id_cliente = ?;`;
+            const [rows] = await connection.query(sqlCliente, values);
+    
+            await connection.commit();
+            return {clienteTemPedidos: false, rows};
+    
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        }
     },
+    
 
 
 };

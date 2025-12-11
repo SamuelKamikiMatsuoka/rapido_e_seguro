@@ -125,6 +125,7 @@ const pedidoModel = {
     selectEntrega: async () => {
         const sql = `
             SELECT
+                id_calculo as id_entrega,
                 Pedidos_id_pedido as id_pedido, 
                 cli.nome as nome_cliente,
                 valor_distancia, 
@@ -152,6 +153,7 @@ const pedidoModel = {
     selectEntregaById: async (pIdPedido) => {
         const sql = `
             SELECT
+                id_calculo as id_entrega,
                 Pedidos_id_pedido as id_pedido, 
                 cli.nome as nome_cliente,
                 valor_distancia, 
