@@ -244,10 +244,12 @@ const clienteModel = {
      * @returns {Promise<Object>} Retorna o resultado da exclusão na tabela clientes.
      */
     deleteCliente: async (pIdCliente) => {
+        const sqlPedidos = `DELETE FROM pedidos WHERE clientes_id_cliente = ?;`;
         const sqlTelefones = `DELETE FROM telefones WHERE clientes_id_cliente = ?;`;
         const sqlEnderecos = `DELETE FROM enderecos WHERE clientes_id_cliente = ?;`;
         const sqlClientes = `DELETE FROM clientes WHERE id_cliente = ?;`;
         const values = [pIdCliente];
+        await pool.query(sqlPedidos, values)
         await pool.query(sqlTelefones, values);
         await pool.query(sqlEnderecos, values);
         const [rows] = await pool.query(sqlClientes, values);
