@@ -58,6 +58,14 @@ const pedidoController = {
                 return res.status(400).json({ message: 'Verifique os dados enviados e tente novamente' });
             }
 
+            if (isNaN(distancia_km) || distancia_km <= 0) {
+                return res.status(400).json({ message: "Distância inválida" });
+            }
+            
+            if (peso_kg <= 0 || isNaN(distancia_km)) {
+                return res.status(400).json({ message: "Peso deve ser maior que zero" });
+            }
+
             const resultado = await pedidoModel.insertPedido(data_pedido, distancia_km, peso_kg, id_cliente, id_tipoEntrega, id_parametro);
 
             res.status(201).json({ message: 'Registro incluido com sucesso!', data: resultado });
@@ -90,6 +98,14 @@ const pedidoController = {
                 return res.status(400).json({
                     message: "Dados incompletos no corpo da requisição"
                 });
+            }
+
+            if (isNaN(distancia_km) || distancia_km <= 0) {
+                return res.status(400).json({ message: "Distância inválida" });
+            }
+            
+            if (peso_kg <= 0 || isNaN(distancia_km)) {
+                return res.status(400).json({ message: "Peso deve ser maior que zero" });
             }
 
             const pedidoAtual = await pedidoModel.selectPedidoById(idPedido);
